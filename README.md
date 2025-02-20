@@ -33,8 +33,8 @@ Aplikasi **To-Do List** berbasis Laravel 11 untuk membantu pengguna mengelola tu
 1️⃣ **Clone Repository**
 
 ```sh
-git clone https://github.com/username/todo-list-laravel.git
-cd todo-list-laravel
+git clone https://github.com/Sedetil/TaskMaster.git
+cd todolist
 ```
 
 2️⃣ **Install Dependency**
