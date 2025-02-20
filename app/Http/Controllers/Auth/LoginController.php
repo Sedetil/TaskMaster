@@ -14,22 +14,34 @@ class LoginController extends Controller
     }
 
     public function login(Request $request)
-    {
-        $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required'],
-        ]);
+{
+    $request->validate([
+        'username' => 'required|string',
+        'password' => 'required',
+    ], [
+        'username.required' => 'Username tidak boleh kosong.',
+        'password.required' => 'Password tidak boleh kosong.',
+    ]);
 
-        if (Auth::attempt($request->only('email', 'password'))) {
-            return redirect()->intended('/dashboard')->with('success', 'Login berhasil!');
-        }
+    $credentials = $request->only('username', 'password');
 
-        return back()->withErrors(['email' => 'Email atau password salah!'])->withInput();
+    if (Auth::attempt($credentials, $request->filled('remember'))) {
+        $request->session()->regenerate();
+        return redirect()->intended('/dashboard')
+            ->with('success', 'Login berhasil!');
     }
+
+    return back()
+        ->withErrors(['username' => 'Username atau password salah!'])
+        ->withInput($request->except('password'));
+}
 
     public function logout(Request $request)
     {
         Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        
         return redirect('/login')->with('success', 'Anda telah logout.');
     }
 }

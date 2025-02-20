@@ -1,98 +1,135 @@
 <?php
 
-namespace App\Http\Controllers; // Define namespace
+namespace App\Http\Controllers;
 
-use App\Models\ToDoList; // Import ToDoList
-use Illuminate\Http\Request; // Import Request
-use Illuminate\Support\Facades\Auth; // Import Auth
-use Carbon\Carbon; // Import Carbon
+use App\Models\ToDoList;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
 
-class ToDoListController extends Controller // Define class ToDoListController extends Controller
+class ToDoListController extends Controller
 {
-    public function index() // Define index method
-    {
+    public function index(Request $request)
+{
+    $search = $request->input('search');
+    $today = Carbon::now();
 
-        //Menambahkan fitur untuk menampilkan tanggal sekarang
-        $hariIni = Carbon::now()->translatedFormat('l, d F Y H:i:s'); // Format: Hari, Tanggal Bulan Tahun Jam:Menit:Detik
-
-        // Menambahkan fitur untuk menampilkan data hanya untuk hari ini
-        $tanggalHariIni = Carbon::now()->toDateString(); // Format: YYYY-MM-DD
-
-        // Ambil data hanya untuk hari ini berdasarkan created_at
-        $todolists = ToDoList::where('user_id', Auth::id()) // Filter berdasarkan user_id
-            ->whereDate('created_at', $tanggalHariIni) // Filter berdasarkan tanggal hari ini
-            ->get(); // Ambil semua data
-        return view('dashboard', compact('todolists', 'hariIni')); // Kirim data ke view
+    $tasksQuery = ToDoList::where('user_id', Auth::id());
+    
+    // Apply search filter if search parameter exists
+    if ($search) {
+        $tasksQuery->where(function($query) use ($search) {
+            $query->where('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('priority', 'like', "%{$search}%");
+        });
     }
 
-    public function store(Request $request) // Define store method
+    $tasks = $tasksQuery->orderBy('created_at', 'desc')->get();
+
+    // Calculate statistics based on filtered tasks
+    $completedCount = $tasks->where('status', 'Completed')->count();
+    $inProgressCount = $tasks->where('status', 'In Progress')->count();
+    $notStartedCount = $tasks->where('status', 'Not Started')->count();
+    $totalTasks = $tasks->count();
+
+    $stats = [
+        'completed' => $totalTasks > 0 ? round(($completedCount / $totalTasks) * 100) : 0,
+        'inProgress' => $totalTasks > 0 ? round(($inProgressCount / $totalTasks) * 100) : 0,
+        'notStarted' => $totalTasks > 0 ? round(($notStartedCount / $totalTasks) * 100) : 0,
+    ];
+
+    return view('dashboard', compact('tasks', 'stats', 'search'));
+}
+
+public function search(Request $request)
+{
+    return $this->index($request);
+}
+
+    public function store(Request $request)
     {
-        $request->validate([ // Validasi input
-            'nama_tugas' => 'required|string|max:255', // Nama tugas harus diisi, bertipe string, maksimal 255 karakter
-        ]);
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'priority' => 'required|in:Low,Moderate,Extreme',
+            'due_date' => 'required|date',
+            'image' => 'nullable|image|max:5120'
+        ]);        
 
-        ToDoList::create([ // Simpan data ke database
-            'user_id' => Auth::id(), // Ambil user_id dari Auth
-            'nama_tugas' => $request->nama_tugas, // Ambil nama_tugas dari input
-            'status_tugas' => 'pending', // Set status_tugas ke pending
-        ]);
+        $data = $request->all();
+        $data['user_id'] = Auth::id();
+        $data['status'] = 'In Progress'; // Set default status to In Progress
 
-        return redirect()->route('dashboard')->with('success', 'Tugas berhasil ditambahkan!'); // Redirect ke dashboard dengan pesan sukses
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('task-images', 'public');
+            $data['image'] = $imagePath;
+        }
+
+        ToDoList::create($data);
+
+        return redirect()->route('dashboard')->with('success', 'Task added successfully!');
     }
 
     public function update(Request $request, ToDoList $todolist)
     {
-        if ($todolist->user_id !== Auth::id()) { // Cek apakah user_id pada ToDoList sama dengan user_id yang sedang login
-            return redirect()->route('dashboard')->with('error', 'Akses ditolak!'); // Redirect ke dashboard dengan pesan error
+        if ($todolist->user_id !== Auth::id()) {
+            return redirect()->route('dashboard')->with('error', 'Unauthorized access');
         }
 
-        $todolist->update([
-            'status_tugas' => $request->status_tugas, // Update status_tugas
+        $request->validate([
+            'title' => 'required_without:status|string|max:255',
+            'description' => 'nullable|string',
+            'priority' => 'required_without:status|in:Low,Moderate,Extreme',
+            'due_date' => 'required_without:status|date',
+            'status' => 'nullable|in:Not Started,In Progress,Completed',
+            'image' => 'nullable|image|max:5120'
         ]);
 
-        return redirect()->route('dashboard')->with('success', 'Status tugas diperbarui!'); // Redirect ke dashboard dengan pesan sukses
+        // Handle status-only updates
+        if ($request->has('status')) {
+            $todolist->update(['status' => $request->status]);
+            return redirect()->route('dashboard')->with('success', 'Task status updated successfully!');
+        }
+
+        // Handle full task updates
+        $data = $request->except(['_token', '_method', 'image']);
+        
+        if ($request->hasFile('image')) {
+            if ($todolist->image) {
+                Storage::disk('public')->delete($todolist->image);
+            }
+            $imagePath = $request->file('image')->store('task-images', 'public');
+            $data['image'] = $imagePath;
+        }
+
+        $todolist->update($data);
+
+        return redirect()->route('dashboard')->with('success', 'Task updated successfully!');
     }
 
     public function destroy(ToDoList $todolist)
     {
-        if ($todolist->user_id !== Auth::id()) { // Cek apakah user_id pada ToDoList sama dengan user_id yang sedang login
-            return redirect()->route('dashboard')->with('error', 'Akses ditolak!'); // Redirect ke dashboard dengan pesan error
-        }
-
-        $todolist->delete(); // Hapus data
-        return redirect()->route('dashboard')->with('success', 'Tugas berhasil dihapus!'); // Redirect ke dashboard dengan pesan sukses
-    }
-
-    public function edit(ToDoList $todolist)
-    {
         if ($todolist->user_id !== Auth::id()) {
-            return redirect()->route('dashboard')->with('error', 'Akses ditolak!');
+            return redirect()->route('dashboard')->with('error', 'Unauthorized access');
         }
 
-        return view('edit_todolist', compact('todolist'));
-    }
-
-    public function updateNama(Request $request, ToDoList $todolist)
-    {
-        if ($todolist->user_id !== Auth::id()) {
-            return redirect()->route('dashboard')->with('error', 'Akses ditolak!');
+        if ($todolist->image) {
+            Storage::disk('public')->delete($todolist->image);
         }
 
-        $request->validate([
-            'nama_tugas' => 'required|string|max:255',
-        ]);
-
-        $todolist->update([
-            'nama_tugas' => $request->nama_tugas,
-        ]);
-
-        return redirect()->route('dashboard')->with('success', 'Nama tugas berhasil diperbarui!');
+        $todolist->delete();
+        return redirect()->route('dashboard')->with('success', 'Task deleted successfully!');
     }
 
     public function history()
     {
-        $todolists = ToDoList::where('user_id', Auth::id())->orderBy('created_at', 'desc')->get(); // Ambil data berdasarkan user_id dan urutkan berdasarkan created_at secara descending
-
-        return view('history_todolist', compact('todolists')); // Kirim data ke view
+        $completedTasks = ToDoList::where('user_id', Auth::id())
+                            ->where('status', 'Completed')
+                            ->orderBy('created_at', 'desc')
+                            ->get();
+                            
+        return view('history', compact('completedTasks'));
     }
 }

@@ -11,7 +11,15 @@ class ToDoList extends Model
 
     protected $table = 'todolists';
 
-    protected $fillable = ['user_id', 'nama_tugas', 'status_tugas'];
+    protected $fillable = [
+        'user_id',
+        'title', // This corresponds to 'nama_tugas'
+        'description',
+        'priority',
+        'status', // Change 'status_tugas' to 'status'
+        'due_date',
+        'image',
+    ];    
 
     public function user()
     {

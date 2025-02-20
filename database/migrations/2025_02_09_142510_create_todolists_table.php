@@ -9,9 +9,13 @@ return new class extends Migration {
     {
         Schema::create('todolists', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->string('nama_tugas');
-            $table->enum('status_tugas', ['pending', 'completed'])->default('pending');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('title'); // This corresponds to 'nama_tugas'
+            $table->text('description')->nullable();
+            $table->enum('priority', ['Low', 'Moderate', 'Extreme']);
+            $table->enum('status', ['Not Started', 'In Progress', 'Completed'])->default('Not Started'); // Change 'status_tugas' to 'status'
+            $table->date('due_date');
+            $table->string('image')->nullable();
             $table->timestamps();
         });
     }
