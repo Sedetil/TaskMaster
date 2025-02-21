@@ -6,6 +6,7 @@
     <title>Task History</title>
     @vite('resources/css/app.css')
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="shortcut icon" href="{{ asset('assets/images/planner.png') }}" type="image/x-icon">
 </head>
 <body class="bg-gray-100">
     <div class="flex flex-col md:flex-row min-h-screen">

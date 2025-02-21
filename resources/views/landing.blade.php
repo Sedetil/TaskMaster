@@ -8,6 +8,7 @@
     @vite('resources/css/app.css')
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="shortcut icon" href="{{ asset('assets/images/planner.png') }}" type="image/x-icon">
 
     <!-- GSAP Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
@@ -422,7 +423,7 @@
 
                 <!-- Notion -->
                 <div class="w-20 h-20 bg-white rounded-xl shadow-md flex items-center justify-center hover:scale-110 transition integration-item">
-                    <i class="fab fa-note-sticky text-4xl text-black"></i>
+                    <img src="{{ asset('assets/images/notion.svg') }}" alt="Notion Icon" class="w-10 h-10">
                 </div>
 
                 <!-- GitHub -->

@@ -20,9 +20,8 @@ Route::post('/todolist', [ToDoListController::class, 'store'])->middleware('auth
 Route::patch('/todolist/{todolist}', [ToDoListController::class, 'update'])->middleware('auth')->name('todolist.update');
 Route::delete('/todolist/{todolist}', [ToDoListController::class, 'destroy'])->middleware('auth')->name('todolist.destroy');
 Route::get('/todolist/{todolist}/edit', [ToDoListController::class, 'edit'])->middleware('auth')->name('todolist.edit');
-Route::patch('/todolist/{todolist}/update-nama', [ToDoListController::class, 'updateNama'])->middleware('auth')->name('todolist.updateNama');
 
-Route::get('/todolist/history', [ToDoListController::class, 'history'])->middleware('auth')->name('todolist.history');
+Route::get('/history', [ToDoListController::class, 'history'])->middleware('auth')->name('todolist.history');
 
 Route::get('/settings', [SettingsController::class, 'index'])->middleware('auth')->name('settings');
 Route::post('/settings/update', [SettingsController::class, 'update'])->middleware('auth')->name('settings.update');

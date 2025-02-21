@@ -6,6 +6,7 @@
     <title>Login</title>
     @vite('resources/css/app.css')
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="shortcut icon" href="{{ asset('assets/images/planner.png') }}" type="image/x-icon">
 </head>
 <body class="bg-[#f05454] min-h-screen" style="background-image: url('assets/images/background-image.png'); background-size: cover; background-position: center;">
     <div class="flex justify-center items-center min-h-screen p-4">

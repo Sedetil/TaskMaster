@@ -6,6 +6,7 @@
     <title>Dashboard</title>
     @vite('resources/css/app.css')
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="shortcut icon" href="{{ asset('assets/images/planner.png') }}" type="image/x-icon">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
@@ -121,11 +122,14 @@
                         </form>
                         <div id="searchResults" class="absolute z-10 bg-white rounded-lg shadow-lg w-full md:w-64 mt-1 hidden">
                             @if(isset($search) && $search)
-                                <a href="{{ route('dashboard') }}" class="absolute right-10 top-3 text-gray-400 hover:text-[#ff6b6b]">
-                                    <i class="fas fa-times"></i>
-                                </a>
-                                <div class="mt-2 text-sm text-gray-500 p-2">
-                                    Showing results for: <span class="font-bold text-[#ff6b6b]">{{ $search }}</span>
+                                <!-- Improved alignment for the times icon -->
+                                <div class="flex justify-between items-center p-2 border-b">
+                                    <span class="text-sm text-gray-500">
+                                        Results for: <span class="font-bold text-[#ff6b6b]">{{ $search }}</span>
+                                    </span>
+                                    <a href="{{ route('dashboard') }}" class="text-gray-400 hover:text-[#ff6b6b] p-1">
+                                        <i class="fas fa-times"></i>
+                                    </a>
                                 </div>
                             @endif
                         </div>
@@ -245,7 +249,14 @@
                                                 Due: {{ \Carbon\Carbon::parse($task->due_date)->format('M d, Y') }}
                                             </span>
                                             <span class="text-xs md:text-sm text-gray-500">
-                                                Priority: <span class="text-blue-500">{{ $task->priority }}</span>
+                                                Priority: 
+                                                <span class="
+                                                    @if($task->priority == 'Extreme') text-red-500 font-semibold 
+                                                    @elseif($task->priority == 'Moderate') text-blue-500 font-semibold
+                                                    @elseif($task->priority == 'Low') text-green-500 font-semibold
+                                                    @endif">
+                                                    {{ $task->priority }}
+                                                </span>
                                             </span>
                                             <form action="{{ route('todolist.update', $task->id) }}" method="POST" class="inline mt-2 sm:mt-0">
                                                 @csrf
@@ -297,9 +308,9 @@
                                         <textarea name="description" class="w-full border rounded p-2 mb-3">{{ $task->description }}</textarea>
                                         <input type="date" name="due_date" id="editTaskDate-{{ $task->id }}" value="{{ $task->due_date }}" required class="w-full border rounded p-2 mb-3">
                                         <select name="priority" required class="w-full border rounded p-2 mb-3">
-                                            <option value="Low" {{ $task->priority == 'Low' ? 'selected' : '' }}>Low</option>
-                                            <option value="Moderate" {{ $task->priority == 'Moderate' ? 'selected' : '' }}>Moderate</option>
-                                            <option value="Extreme" {{ $task->priority == 'Extreme' ? 'selected' : '' }}>Extreme</option>
+                                            <option value="Low" {{ $task->priority == 'Low' ? 'selected' : '' }} class="text-green-500 font-medium">Low</option>
+                                            <option value="Moderate" {{ $task->priority == 'Moderate' ? 'selected' : '' }} class="text-blue-500 font-medium">Moderate</option>
+                                            <option value="Extreme" {{ $task->priority == 'Extreme' ? 'selected' : '' }} class="text-red-500 font-medium">Extreme</option>
                                         </select>
                                         <div class="mb-3">
                                             <label class="block text-sm mb-1">Current Image:</label>
@@ -354,9 +365,9 @@
                 <input type="date" name="due_date" id="addTaskDate" required class="w-full border rounded p-2 mb-3">
                 <select name="priority" required class="w-full border rounded p-2 mb-3">
                     <option value="">Select Priority</option>
-                    <option value="Low">Low</option>
-                    <option value="Moderate">Moderate</option>
-                    <option value="Extreme">Extreme</option>
+                    <option value="Low" class="text-green-500 font-medium">Low</option>
+                    <option value="Moderate" class="text-blue-500 font-medium">Moderate</option>
+                    <option value="Extreme" class="text-red-500 font-medium">Extreme</option>
                 </select>
                 <input type="file" name="image" class="w-full border rounded p-2 mb-3">
                 <div class="flex justify-end space-x-2">
@@ -468,8 +479,8 @@
                 text: "This task will be permanently deleted!",
                 icon: "warning",
                 showCancelButton: true,
-                confirmButtonColor: "#d33",
-                cancelButtonColor: "#3085d6",
+                confirmButtonColor: "#ff6b6b",
+                cancelButtonColor: "#718096",
                 confirmButtonText: "Yes, delete it!"
             }).then((result) => {
                 if (result.isConfirmed) {
@@ -588,6 +599,18 @@
     let currentDate = new Date();
     let selectedDateValue = null;
     
+    // Get URL parameters to check if a date is already selected
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlDate = urlParams.get('date');
+    
+    // Set selected date from URL if available
+    if (urlDate) {
+        selectedDateValue = new Date(urlDate);
+        currentDate = new Date(urlDate);
+        selectedDate.value = formatDate(selectedDateValue);
+        clearDate.classList.remove('hidden');
+    }
+    
     // Get all task dates for marking the calendar
     const taskDates = @json($tasks->pluck('due_date'));
     const taskDatesMap = {}; // Will store dates with tasks as keys
@@ -670,7 +693,7 @@
             dayCell.className = cellClass;
             dayCell.textContent = day;
             
-            // Set click handler
+            // Set click handler - allow selection of any date including past dates
             dayCell.addEventListener('click', () => {
                 selectDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), day));
                 renderCalendar(); // Re-render to update selection
@@ -757,6 +780,7 @@
     // Initialize
     initCalendar();
 });
+
     </script>
 </body>
 </html>
