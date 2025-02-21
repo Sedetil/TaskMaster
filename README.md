@@ -62,6 +62,7 @@ DB_PASSWORD=
 ```sh
 php artisan key:generate
 php artisan migrate
+php artisan storage:link
 ```
 
 5️⃣ **Jalankan Server Laravel**
